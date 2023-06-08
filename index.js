@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
 require("dotenv").config();
 
@@ -38,6 +38,19 @@ async function run() {
         }
         const result = await usersCollection.updateOne(query,updateDoc,options);
         console.log(result);
+        res.send(result);
+    })
+
+    app.patch("/users/:id", async(req, res) => {
+        const id = req.params.id
+        const query = {_id: new ObjectId(id)}
+        const options = {upsert: true}
+        const updateDoc = {
+            $set: {
+              position:"admin"
+            }
+        }
+        const result = await usersCollection.updateOne(query,updateDoc,options);
         res.send(result);
     })
 
