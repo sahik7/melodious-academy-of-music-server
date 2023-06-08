@@ -34,8 +34,11 @@ async function run() {
         const query = {email:email}
         const options = {upsert: true}
         const updateDoc = {
-            $set: userData
-        }
+          $set: {
+            position: "student",
+            ...userData
+          }
+        };
         const result = await usersCollection.updateOne(query,updateDoc,options);
         console.log(result);
         res.send(result);
