@@ -4,6 +4,7 @@ const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
 require("dotenv").config();
+const jwt = require("jsonwebtoken")
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.rko4yag.mongodb.net/?retryWrites=true&w=majority`
 
@@ -11,6 +12,26 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 // Middleware
 app.use(cors())
 app.use(express.json())
+
+
+const validateToken = (req, res, next) => {
+  const authorization = req.headers.authorization
+  switch (authorization) {
+    case false:
+      return res.status(401).send({ error: true, message: "Unauthorized Breach" });
+  }
+  //TOKEN
+  console.log(authorization)
+  const token = authorization?.split(" ")[1];
+
+  jwt.verify(token, process.env.ACCESS_PRIVATE_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(401).send({ error: true, message: "Unauthorized Breach" });
+    }
+    req.tokenDecoded = decoded;
+    next()
+  });
+}
 
 
 
@@ -27,7 +48,15 @@ async function run() {
   try {
     const usersCollection = client.db("academyDB").collection("users");
 
+
+    app.post("/token", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_PRIVATE_TOKEN)
+      res.send({ token })
+    })
+
     // users API
+    // Register a new user
     app.put("/users/:email", async (req, res) => {
       const userData = req.body;
       const email = req.params.email
@@ -40,13 +69,26 @@ async function run() {
         }
       };
       const result = await usersCollection.updateOne(query, updateDoc, options);
-      console.log(result);
       res.send(result);
     })
 
+
+    app.get("/users/:email",validateToken, async (req, res) => {
+      const email = req.params.email; 
+      const decodedtoken = req.tokenDecoded;
+      const query  = {email}
+      if(decodedtoken.email !== email){
+        return res.status(403).send({ error: true, message: "Access Forbidden: Unauthorized Breach" });
+      }
+      const user = await usersCollection.findOne(query);
+      res.send()
+    })
+
+    // admin change the position
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id
       const { position } = req.body;
+
       const query = { _id: new ObjectId(id) }
       const options = { upsert: true }
       const updateDoc = {
@@ -59,7 +101,12 @@ async function run() {
     })
 
 
-    app.get("/users", async (req, res) => {
+    app.get("/users", validateToken, async (req, res) => {
+      const decodedtoken = req.tokenDecoded;
+      console.log(decodedtoken);
+      if (!decodedtoken.email) {
+        return res.status(403).send({ error: true, message: "Access Forbidden: Unauthorized Breach" });
+      }
       const users = await usersCollection.find().toArray();
       res.send(users);
     })
