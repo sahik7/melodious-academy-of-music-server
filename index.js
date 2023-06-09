@@ -29,38 +29,39 @@ async function run() {
 
     // users API
     app.put("/users/:email", async (req, res) => {
-        const userData = req.body;
-        const email = req.params.email
-        const query = {email:email}
-        const options = {upsert: true}
-        const updateDoc = {
-          $set: {
-            position: "student",
-            ...userData
-          }
-        };
-        const result = await usersCollection.updateOne(query,updateDoc,options);
-        console.log(result);
-        res.send(result);
+      const userData = req.body;
+      const email = req.params.email
+      const query = { email: email }
+      const options = { upsert: true }
+      const updateDoc = {
+        $set: {
+          position: "student",
+          ...userData
+        }
+      };
+      const result = await usersCollection.updateOne(query, updateDoc, options);
+      console.log(result);
+      res.send(result);
     })
 
-    app.patch("/users/:id", async(req, res) => {
-        const id = req.params.id
-        const query = {_id: new ObjectId(id)}
-        const options = {upsert: true}
-        const updateDoc = {
-            $set: {
-              position:"admin"
-            }
+    app.patch("/users/:id", async (req, res) => {
+      const id = req.params.id
+      const { position } = req.body;
+      const query = { _id: new ObjectId(id) }
+      const options = { upsert: true }
+      const updateDoc = {
+        $set: {
+          position: position
         }
-        const result = await usersCollection.updateOne(query,updateDoc,options);
-        res.send(result);
+      }
+      const result = await usersCollection.updateOne(query, updateDoc, options);
+      res.send(result);
     })
 
 
     app.get("/users", async (req, res) => {
-        const users = await usersCollection.find().toArray();
-        res.send(users);
+      const users = await usersCollection.find().toArray();
+      res.send(users);
     })
 
 
@@ -75,10 +76,10 @@ async function run() {
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
-    res.send('server Server is running..')
-  })
+  res.send('server Server is running..')
+})
 
 
 app.listen(port, () => {
-    console.log(`server is running on port ${port}`)
-  })
+  console.log(`server is running on port ${port}`)
+})
