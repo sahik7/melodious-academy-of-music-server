@@ -48,6 +48,7 @@ async function run() {
   try {
     const usersCollection = client.db("academyDB").collection("users");
     const classesCollection = client.db("academyDB").collection("classes");
+    const myClassesCollection = client.db("academyDB").collection("myClasses");
 
 
     app.post("/token", async (req, res) => {
@@ -93,6 +94,33 @@ async function run() {
       const result = {position: user?.position}
       console.log(result)
       res.send(result)
+    })
+
+
+    // my classes
+    app.put("/my-classes/:id", async(req, res) => {
+      const id = req.params.id
+      const myClassInfo = req.body
+      console.log(myClassInfo, id)
+      const filter = { id: id }
+      const updateDoc = {
+        $set: {
+          ...myClassInfo
+        }
+      }
+      try {
+        const existingClass = await myClassesCollection.findOne(filter);
+    
+        if (existingClass) {
+          res.send({ message: "Document already exists" });
+        } else {
+          const result = await myClassesCollection.updateOne(filter, updateDoc, { upsert: true });
+          res.send(result);
+        }
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     })
 
     // admin change the position
