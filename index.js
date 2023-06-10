@@ -122,6 +122,20 @@ async function run() {
         res.status(500).json({ message: "Internal server error" });
       }
     })
+    // collect My classes
+    app.get("/my-classes/:email", async(req, res) => {
+      const email = req.params.email;
+      const myClasses = await myClassesCollection.find({ email }).toArray();
+    res.send(myClasses);
+
+    })
+    // remove from my classes
+    app.delete("/my-classes/:id", async(req, res) => {
+      const id = req.params.id;
+      const removeItem = await myClassesCollection.deleteOne({ _id: new ObjectId(id) })
+    res.send(removeItem);
+
+    })
 
     // admin change the position
     app.patch("/users/:id", async (req, res) => {
