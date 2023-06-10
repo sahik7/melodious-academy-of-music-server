@@ -1,9 +1,9 @@
+require("dotenv").config();
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
-require("dotenv").config();
 const jwt = require("jsonwebtoken")
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.rko4yag.mongodb.net/?retryWrites=true&w=majority`
@@ -74,15 +74,24 @@ async function run() {
     })
 
 
-    app.get("/users/:email", validateToken, async (req, res) => {
+    // app.get("/users/:email", validateToken, async (req, res) => {
+    //   const email = req.params.email;
+    //   const query = { email:email }
+    //   const decodedtoken = req.tokenDecoded;
+    //   if (decodedtoken.email !== email) {
+    //     return res.status(403).send({ error: true, message: "Access Forbidden: Unauthorized Breach" });
+    //   }
+    //   const user = await usersCollection.findOne(query);
+    //   const result = {admin:user?.position === "admin"}
+    //   res.send(result)
+    // })
+
+    app.get("/users/:email", async(req, res) => {
       const email = req.params.email;
-      const query = { email:email }
-      const decodedtoken = req.tokenDecoded;
-      if (decodedtoken.email !== email) {
-        return res.status(403).send({ error: true, message: "Access Forbidden: Unauthorized Breach" });
-      }
+      const query = {email:email}
       const user = await usersCollection.findOne(query);
-      const result = {admin:user?.position === "admin"}
+      const result = {position: user?.position}
+      console.log(result)
       res.send(result)
     })
 
