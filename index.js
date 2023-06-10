@@ -47,6 +47,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const usersCollection = client.db("academyDB").collection("users");
+    const classesCollection = client.db("academyDB").collection("classes");
 
 
     app.post("/token", async (req, res) => {
@@ -73,15 +74,16 @@ async function run() {
     })
 
 
-    app.get("/users/:email",validateToken, async (req, res) => {
-      const email = req.params.email; 
+    app.get("/users/:email", validateToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email:email }
       const decodedtoken = req.tokenDecoded;
-      const query  = {email}
-      if(decodedtoken.email !== email){
+      if (decodedtoken.email !== email) {
         return res.status(403).send({ error: true, message: "Access Forbidden: Unauthorized Breach" });
       }
       const user = await usersCollection.findOne(query);
-      res.send()
+      const result = {admin:user?.position === "admin"}
+      res.send(result)
     })
 
     // admin change the position
@@ -109,6 +111,24 @@ async function run() {
       }
       const users = await usersCollection.find().toArray();
       res.send(users);
+    })
+
+    // Classes
+    app.get("/classes",async (req, res) => {
+      const popularClasses = req.query.topClass;
+      if (popularClasses) {
+        const popularClasses = await classesCollection
+          .find()
+          .sort({ enrolledStudents: -1 })
+          .limit(6)
+          .toArray();
+    
+        res.send(popularClasses);
+      } else {
+        // Fetch all classes
+        const allClasses = await classesCollection.find().toArray();
+        res.send(allClasses);
+      }
     })
 
 
