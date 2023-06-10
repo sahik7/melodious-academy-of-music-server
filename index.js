@@ -87,22 +87,23 @@ async function run() {
     //   res.send(result)
     // })
 
-    app.get("/users/:email", async(req, res) => {
+    app.get("/users/:email", async (req, res) => {
       const email = req.params.email;
-      const query = {email:email}
+      const query = { email: email }
       const user = await usersCollection.findOne(query);
-      const result = {position: user?.position}
+      const result = { position: user?.position }
       console.log(result)
       res.send(result)
     })
 
 
     // my classes
-    app.put("/my-classes/:id", async(req, res) => {
+    app.put("/my-classes/:id", async (req, res) => {
       const id = req.params.id
       const myClassInfo = req.body
+      const email = myClassInfo.email
       console.log(myClassInfo, id)
-      const filter = { id: id }
+      const filter = { id: id , email:email}
       const updateDoc = {
         $set: {
           ...myClassInfo
@@ -110,7 +111,7 @@ async function run() {
       }
       try {
         const existingClass = await myClassesCollection.findOne(filter);
-    
+
         if (existingClass) {
           res.send({ message: "Document already exists" });
         } else {
@@ -123,17 +124,17 @@ async function run() {
       }
     })
     // collect My classes
-    app.get("/my-classes/:email", async(req, res) => {
+    app.get("/my-classes/:email", async (req, res) => {
       const email = req.params.email;
       const myClasses = await myClassesCollection.find({ email }).toArray();
-    res.send(myClasses);
+      res.send(myClasses);
 
     })
     // remove from my classes
-    app.delete("/my-classes/:id", async(req, res) => {
+    app.delete("/my-classes/:id", async (req, res) => {
       const id = req.params.id;
       const removeItem = await myClassesCollection.deleteOne({ _id: new ObjectId(id) })
-    res.send(removeItem);
+      res.send(removeItem);
 
     })
 
@@ -165,7 +166,7 @@ async function run() {
     })
 
     // Classes
-    app.get("/classes",async (req, res) => {
+    app.get("/classes", async (req, res) => {
       const popularClasses = req.query.topClass;
       if (popularClasses) {
         const popularClasses = await classesCollection
@@ -173,7 +174,7 @@ async function run() {
           .sort({ enrolledStudents: -1 })
           .limit(6)
           .toArray();
-    
+
         res.send(popularClasses);
       } else {
         // Fetch all classes
