@@ -63,7 +63,6 @@ async function run() {
     // Register a new user
     app.put("/users/:email", async (req, res) => {
       const userData = req.body;
-      console.log(userData)
       const email = req.params.email
       const query = { email: email }
       const options = { upsert: true }
@@ -104,7 +103,7 @@ async function run() {
       const id = req.params.id
       const myClassInfo = req.body
       const email = myClassInfo.email
-      const filter = { id: id , email:email}
+      const filter = { id: id, email: email }
       const updateDoc = {
         $set: {
           ...myClassInfo
@@ -128,9 +127,8 @@ async function run() {
     app.get("/my-classes/:email", async (req, res) => {
       const specificClass = req.query.specificClass;
       const email = req.params.email;
-      if(specificClass){
-        const query = {id: specificClass, email:email}
-        console.log(specificClass)
+      if (specificClass) {
+        const query = { id: specificClass, email: email }
         const enrolledClass = await myClassesCollection.findOne(query);
         return res.send(enrolledClass)
       }
@@ -138,21 +136,25 @@ async function run() {
       res.send(myClasses);
     })
 
-// enrolled Classes
-app.post("/enrolled",async (req, res) => {
-  const enrolledItem = req.body;
-  console.log(enrolledItem)
-  const enrolled = await enrolledClassesCollection.insertOne(enrolledItem)
-  res.send(enrolled);
-})
+    // enrolled Classes
+    app.get("/enrolled", async (req, res) => {
+      const email = req.query.email;
+      const paid = await enrolledClassesCollection.find({ email }).toArray()
+      res.send(paid);
+    })
+    // upload enrolled Classes
+    app.post("/enrolled", async (req, res) => {
+      const enrolledItem = req.body;
+      const enrolled = await enrolledClassesCollection.insertOne(enrolledItem)
+      res.send(enrolled);
+    })
 
 
 
     // remove from my classes
     app.delete("/my-classes/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id)
-      const removeItem = await myClassesCollection.deleteOne({ id:id })
+      const removeItem = await myClassesCollection.deleteOne({ id: id })
       res.send(removeItem);
 
     })
@@ -172,12 +174,28 @@ app.post("/enrolled",async (req, res) => {
       const result = await usersCollection.updateOne(query, updateDoc, options);
       res.send(result);
     })
+    app.patch("/classes/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id)
+      try {
+        const query = { _id:new ObjectId(id) };
+        const updateDoc = {
+          $inc: { availableSeats: -1 }, 
+        };
+    
+        const result = await classesCollection.updateOne(query, updateDoc);
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Error updating class");
+      }
+    });
 
     //Payment Intent
-    app.post("/create-payment-intent",validateToken, async (req, res) => {
+    app.post("/create-payment-intent", validateToken, async (req, res) => {
       const body = req.body;
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: parseInt(body.price*100),
+        amount: parseInt(body.price * 100),
         currency: "usd",
         payment_method_types: [
           "card"
@@ -188,7 +206,7 @@ app.post("/enrolled",async (req, res) => {
       });
     })
     // payment history
-    app.post("/payments", validateToken, async(req, res) => {
+    app.post("/payments", validateToken, async (req, res) => {
       const paymentInfo = req.body;
       const data = await paymentHistoryCollection.insertOne(paymentInfo)
       res.send(data)
@@ -209,8 +227,7 @@ app.post("/enrolled",async (req, res) => {
     app.get("/classes", async (req, res) => {
       const popularClasses = req.query.topClass;
       const email = req.query.email;
-      console.log(email);
-      
+
       try {
         if (email) {
           const instructorClasses = await classesCollection.find({ instructorEmail: email }).toArray();
@@ -233,30 +250,28 @@ app.post("/enrolled",async (req, res) => {
       }
     });
 
-// Add New Class
-app.post("/classes", async (req, res) => {
-  try {
-    const classData = req.body;
-    console.log(classData)
-    
-    const newClass = {
-      ...classData,
-      status: "pending",
-      enrolledStudents: 0
-    };
-    console.log(newClass)
-    const savedClass = await classesCollection.insertOne(newClass);
-    res.send(savedClass);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+    // Add New Class
+    app.post("/classes", async (req, res) => {
+      try {
+        const classData = req.body;
 
-// app.get("/classes", async (req, res) => {
+        const newClass = {
+          ...classData,
+          status: "pending",
+          enrolledStudents: 0
+        };
+        const savedClass = await classesCollection.insertOne(newClass);
+        res.send(savedClass);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    });
 
-// }
-    
+    // app.get("/classes", async (req, res) => {
+
+    // }
+
 
 
 
