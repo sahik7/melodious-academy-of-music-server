@@ -77,6 +77,8 @@ async function run() {
     })
 
 
+
+
     // app.get("/users/:email", validateToken, async (req, res) => {
     //   const email = req.params.email;
     //   const query = { email:email }
@@ -178,11 +180,11 @@ async function run() {
       const id = req.params.id;
       console.log(id)
       try {
-        const query = { _id:new ObjectId(id) };
+        const query = { _id: new ObjectId(id) };
         const updateDoc = {
-          $inc: { availableSeats: -1 }, 
+          $inc: { availableSeats: -1 },
         };
-    
+
         const result = await classesCollection.updateOne(query, updateDoc);
         res.send(result);
       } catch (error) {
@@ -213,10 +215,24 @@ async function run() {
     })
 
 
-    app.get("/users", validateToken, async (req, res) => {
-      const decodedtoken = req.tokenDecoded;
-      if (!decodedtoken.email) {
-        return res.status(403).send({ error: true, message: "Access Forbidden: Unauthorized Breach" });
+    
+
+    app.get("/users", async (req, res) => {
+      const {position,limit} = req.query
+      console.log(limit)
+      if (position && limit) {
+        const filter = { position: position };
+        const limitValue = parseInt(limit, 10);
+        const topInstructors = await usersCollection
+          .find(filter)
+          .limit(limitValue)
+          .toArray();
+        return res.send(topInstructors);
+      }
+      if (position) {
+        const filter = { position: position }
+        const usersByPosition = await usersCollection.find(filter).toArray();
+        return res.send(usersByPosition)
       }
       const users = await usersCollection.find().toArray();
       res.send(users);
