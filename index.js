@@ -185,23 +185,34 @@ async function run() {
       res.send(users);
     })
 
-    // Classes
+
+    // All Classes
     app.get("/classes", async (req, res) => {
       const popularClasses = req.query.topClass;
-      if (popularClasses) {
-        const popularClasses = await classesCollection
-          .find()
-          .sort({ enrolledStudents: -1 })
-          .limit(6)
-          .toArray();
-
-        res.send(popularClasses);
-      } else {
-        // Fetch all classes
-        const allClasses = await classesCollection.find().toArray();
-        res.send(allClasses);
+      const email = req.query.email;
+      console.log(email);
+      
+      try {
+        if (email) {
+          const instructorClasses = await classesCollection.find({ instructorEmail: email }).toArray();
+          res.send(instructorClasses);
+        } else if (popularClasses) {
+          const popularClasses = await classesCollection
+            .find()
+            .sort({ enrolledStudents: -1 })
+            .limit(6)
+            .toArray();
+          res.send(popularClasses);
+        } else {
+          // Fetch all classes
+          const allClasses = await classesCollection.find().toArray();
+          res.send(allClasses);
+        }
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
       }
-    })
+    });
 
 // Add New Class
 app.post("/classes", async (req, res) => {
@@ -222,6 +233,10 @@ app.post("/classes", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// app.get("/classes", async (req, res) => {
+
+// }
     
 
 
