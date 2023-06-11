@@ -176,22 +176,47 @@ async function run() {
       const result = await usersCollection.updateOne(query, updateDoc, options);
       res.send(result);
     })
-    app.patch("/classes/:id", async (req, res) => {
-      const id = req.params.id;
-      console.log(id)
-      try {
-        const query = { _id: new ObjectId(id) };
-        const updateDoc = {
-          $inc: { availableSeats: -1 },
-        };
 
-        const result = await classesCollection.updateOne(query, updateDoc);
-        res.send(result);
-      } catch (error) {
-        console.error(error);
-        res.status(500).send("Error updating class");
+
+
+    app.patch("/classes/:id", async (req, res) => {
+  const id = req.params.id;
+  const { status, feedback } = req.body;
+
+  try {
+    const query = { _id: new ObjectId(id) };
+    const updateDoc = {};
+
+    // Check if the status field is provided in the request
+    if (status) {
+      updateDoc.$set = { status };
+      const result = await classesCollection.updateOne(query,updateDoc)
+      return res.send(result);
+    }
+
+    if (feedback) {
+      if (feedback in req.body) {
+        updateDoc.$set = { feedback };
+      } else {
+        updateDoc.$setOnInsert = { feedback };
       }
-    });
+      const result = await classesCollection.updateOne(query,updateDoc,{ upsert: true })
+      return res.send(result);
+    }
+
+    if (status === 'approved') {
+      updateDoc.$inc = { availableSeats: -1 };
+      const result = await classesCollection.updateOne(query, updateDoc);
+    res.send(result);
+    }
+
+    
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error updating class");
+  }
+});
+
 
     //Payment Intent
     app.post("/create-payment-intent", validateToken, async (req, res) => {
@@ -213,6 +238,21 @@ async function run() {
       const data = await paymentHistoryCollection.insertOne(paymentInfo)
       res.send(data)
     })
+
+    //payment history
+    app.get("/payment-history", async (req, res) => {
+      const email = req.query.email
+      const filter = {email:email}
+      try {
+        const paymentHistory = await paymentHistoryCollection
+          .find(filter)
+          .sort({ date: -1 })
+          .toArray();
+        res.send(paymentHistory);
+      } catch (error) {
+        console.error(error);
+      }
+    });
 
 
     
