@@ -22,7 +22,6 @@ const validateToken = (req, res, next) => {
       return res.status(401).send({ error: true, message: "Unauthorized Breach" });
   }
   //TOKEN
-  console.log(authorization)
   const token = authorization?.split(" ")[1];
 
   jwt.verify(token, process.env.ACCESS_PRIVATE_TOKEN, function (err, decoded) {
@@ -50,6 +49,7 @@ async function run() {
     const usersCollection = client.db("academyDB").collection("users");
     const classesCollection = client.db("academyDB").collection("classes");
     const myClassesCollection = client.db("academyDB").collection("myClasses");
+    const paymentHistoryCollection = client.db("academyDB").collection("paymentHistory");
 
 
     app.post("/token", async (req, res) => {
@@ -93,7 +93,6 @@ async function run() {
       const query = { email: email }
       const user = await usersCollection.findOne(query);
       const result = { position: user?.position }
-      console.log(result)
       res.send(result)
     })
 
@@ -103,7 +102,6 @@ async function run() {
       const id = req.params.id
       const myClassInfo = req.body
       const email = myClassInfo.email
-      console.log(myClassInfo, id)
       const filter = { id: id , email:email}
       const updateDoc = {
         $set: {
@@ -134,7 +132,8 @@ async function run() {
     // remove from my classes
     app.delete("/my-classes/:id", async (req, res) => {
       const id = req.params.id;
-      const removeItem = await myClassesCollection.deleteOne({ _id: new ObjectId(id) })
+      console.log(id)
+      const removeItem = await myClassesCollection.deleteOne({ id:id })
       res.send(removeItem);
 
     })
@@ -169,11 +168,16 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     })
+    // payment history
+    app.post("/payments", validateToken, async(req, res) => {
+      const paymentInfo = req.body;
+      const data = await paymentHistoryCollection.insertOne(paymentInfo)
+      res.send(data)
+    })
 
 
     app.get("/users", validateToken, async (req, res) => {
       const decodedtoken = req.tokenDecoded;
-      console.log(decodedtoken);
       if (!decodedtoken.email) {
         return res.status(403).send({ error: true, message: "Access Forbidden: Unauthorized Breach" });
       }
@@ -198,6 +202,27 @@ async function run() {
         res.send(allClasses);
       }
     })
+
+// Add New Class
+app.post("/classes", async (req, res) => {
+  try {
+    const classData = req.body;
+    console.log(classData)
+    
+    const newClass = {
+      ...classData,
+      status: "pending",
+      enrolledStudents: 0
+    };
+    console.log(newClass)
+    const savedClass = await classesCollection.insertOne(newClass);
+    res.send(savedClass);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+    
 
 
 
