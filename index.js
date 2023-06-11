@@ -49,6 +49,7 @@ async function run() {
     const usersCollection = client.db("academyDB").collection("users");
     const classesCollection = client.db("academyDB").collection("classes");
     const myClassesCollection = client.db("academyDB").collection("myClasses");
+    const enrolledClassesCollection = client.db("academyDB").collection("enrolledClasses");
     const paymentHistoryCollection = client.db("academyDB").collection("paymentHistory");
 
 
@@ -62,6 +63,7 @@ async function run() {
     // Register a new user
     app.put("/users/:email", async (req, res) => {
       const userData = req.body;
+      console.log(userData)
       const email = req.params.email
       const query = { email: email }
       const options = { upsert: true }
@@ -124,11 +126,28 @@ async function run() {
     })
     // collect My classes
     app.get("/my-classes/:email", async (req, res) => {
+      const specificClass = req.query.specificClass;
       const email = req.params.email;
+      if(specificClass){
+        const query = {id: specificClass, email:email}
+        console.log(specificClass)
+        const enrolledClass = await myClassesCollection.findOne(query);
+        return res.send(enrolledClass)
+      }
       const myClasses = await myClassesCollection.find({ email }).toArray();
       res.send(myClasses);
-
     })
+
+// enrolled Classes
+app.post("/enrolled",async (req, res) => {
+  const enrolledItem = req.body;
+  console.log(enrolledItem)
+  const enrolled = await enrolledClassesCollection.insertOne(enrolledItem)
+  res.send(enrolled);
+})
+
+
+
     // remove from my classes
     app.delete("/my-classes/:id", async (req, res) => {
       const id = req.params.id;
