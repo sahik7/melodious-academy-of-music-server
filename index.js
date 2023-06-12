@@ -17,6 +17,7 @@ app.use(express.json())
 
 const validateToken = (req, res, next) => {
   const authorization = req.headers.authorization
+  console.log(authorization)
   switch (authorization) {
     case false:
       return res.status(401).send({ error: true, message: "Unauthorized Breach" });
@@ -55,6 +56,7 @@ async function run() {
 
     app.post("/token", async (req, res) => {
       const user = req.body;
+      console.log("user with token",user)
       const token = jwt.sign(user, process.env.ACCESS_PRIVATE_TOKEN)
       res.send({ token })
     })
@@ -79,19 +81,8 @@ async function run() {
 
 
 
-    // app.get("/users/:email", validateToken, async (req, res) => {
-    //   const email = req.params.email;
-    //   const query = { email:email }
-    //   const decodedtoken = req.tokenDecoded;
-    //   if (decodedtoken.email !== email) {
-    //     return res.status(403).send({ error: true, message: "Access Forbidden: Unauthorized Breach" });
-    //   }
-    //   const user = await usersCollection.findOne(query);
-    //   const result = {admin:user?.position === "admin"}
-    //   res.send(result)
-    // })
 
-    app.get("/users/:email", async (req, res) => {
+    app.get("/users/:email",validateToken, async (req, res) => {
       const email = req.params.email;
       const query = { email: email }
       const user = await usersCollection.findOne(query);
@@ -147,8 +138,21 @@ async function run() {
     // upload enrolled Classes
     app.post("/enrolled", async (req, res) => {
       const enrolledItem = req.body;
-      const enrolled = await enrolledClassesCollection.insertOne(enrolledItem)
-      res.send(enrolled);
+      const Id = enrolledItem.id;
+      
+      const document = await classesCollection.findOne({ _id: new ObjectId(Id) });
+      const updatedAvailableSeats = document.availableSeats;
+      console.log(updatedAvailableSeats,enrolledItem.availableSeats)
+      if(updatedAvailableSeats < enrolledItem.availableSeats){
+        const updatedEnrolledItem = {
+          ...enrolledItem,
+          availableSeats: updatedAvailableSeats,
+        };
+        const enrolled = await enrolledClassesCollection.insertOne(updatedEnrolledItem)
+        res.send(enrolled);
+      }
+      
+      
     })
 
 
@@ -183,7 +187,7 @@ async function run() {
   const id = req.params.id;
   const payment = req.query.payment
   const { status, feedback } = req.body;
-console.log(status ,feedback)
+console.log(status ,feedback,payment,id)
   try {
     const query = { _id: new ObjectId(id) };
     const updateDoc = {};
@@ -203,7 +207,7 @@ console.log(status ,feedback)
   return res.send(result);
     }
 
-    if (payment === "successful" && status === "approved") {
+    if (payment === "successful") {
       updateDoc.$inc = { availableSeats: -1, enrolledStudents: 1 };
       const result = await classesCollection.updateOne(query, updateDoc);
     return res.send(result);
@@ -211,7 +215,6 @@ console.log(status ,feedback)
 
     
   } catch (error) {
-    console.error(error);
     res.status(500).send("Error updating class");
   }
 });
@@ -258,7 +261,6 @@ console.log(status ,feedback)
 
     app.get("/users", async (req, res) => {
       const {position,limit} = req.query
-      console.log(limit)
       if (position && limit) {
         const filter = { position: position };
         const limitValue = parseInt(limit, 10);
@@ -279,7 +281,7 @@ console.log(status ,feedback)
 
 
     // All Classes
-    app.get("/classes", async (req, res) => {
+    app.get("/classes",validateToken, async (req, res) => {
       const popularClasses = req.query.topClass;
       const email = req.query.email;
       const approved = req.query.approved;
@@ -327,10 +329,6 @@ console.log(status ,feedback)
         res.status(500).json({ error: "Internal server error" });
       }
     });
-
-    // app.get("/classes", async (req, res) => {
-
-    // }
 
 
 
