@@ -281,7 +281,7 @@ console.log(status ,feedback,payment,id)
 
 
     // All Classes
-    app.get("/classes",validateToken, async (req, res) => {
+    app.get("/classes", async (req, res) => {
       const popularClasses = req.query.topClass;
       const email = req.query.email;
       const approved = req.query.approved;
