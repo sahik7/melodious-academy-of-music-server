@@ -182,32 +182,28 @@ async function run() {
     app.patch("/classes/:id", async (req, res) => {
   const id = req.params.id;
   const { status, feedback } = req.body;
-
+console.log(status ,feedback)
   try {
     const query = { _id: new ObjectId(id) };
     const updateDoc = {};
 
     // Check if the status field is provided in the request
-    if (status) {
+    if (status && !feedback) {
       updateDoc.$set = { status };
       const result = await classesCollection.updateOne(query,updateDoc)
       return res.send(result);
     }
 
     if (feedback) {
-      if (feedback in req.body) {
-        updateDoc.$set = { feedback };
-      } else {
-        updateDoc.$setOnInsert = { feedback };
-      }
-      const result = await classesCollection.updateOne(query,updateDoc,{ upsert: true })
-      return res.send(result);
+      const updateDoc = { $set: { feedback:feedback } };
+  const result = await classesCollection.updateOne(query, updateDoc, { upsert: true });
+  return res.send(result);
     }
 
     if (status === 'approved') {
       updateDoc.$inc = { availableSeats: -1 };
       const result = await classesCollection.updateOne(query, updateDoc);
-    res.send(result);
+    return res.send(result);
     }
 
     
@@ -283,23 +279,28 @@ async function run() {
     app.get("/classes", async (req, res) => {
       const popularClasses = req.query.topClass;
       const email = req.query.email;
+      const approved = req.query.approved;
 
       try {
         if (email) {
           const instructorClasses = await classesCollection.find({ instructorEmail: email }).toArray();
-          res.send(instructorClasses);
+          return res.send(instructorClasses);
         } else if (popularClasses) {
           const popularClasses = await classesCollection
             .find()
             .sort({ enrolledStudents: -1 })
             .limit(6)
             .toArray();
-          res.send(popularClasses);
-        } else {
+          return res.send(popularClasses);
+        } else if(approved){
+          const filter = {status: "approved"}
+          const approvedClasses = await classesCollection.find(filter).toArray();
+          return res.send(approvedClasses);
+        }
           // Fetch all classes
           const allClasses = await classesCollection.find().toArray();
-          res.send(allClasses);
-        }
+          return res.send(allClasses);
+        
       } catch (error) {
         console.error(error);
         res.status(500).send("Internal Server Error");
