@@ -181,11 +181,14 @@ async function run() {
 
     app.patch("/classes/:id", async (req, res) => {
   const id = req.params.id;
+  const payment = req.query.payment
   const { status, feedback } = req.body;
 console.log(status ,feedback)
   try {
     const query = { _id: new ObjectId(id) };
     const updateDoc = {};
+
+
 
     // Check if the status field is provided in the request
     if (status && !feedback) {
@@ -200,8 +203,8 @@ console.log(status ,feedback)
   return res.send(result);
     }
 
-    if (status === 'approved') {
-      updateDoc.$inc = { availableSeats: -1 };
+    if (payment === "successful" && status === "approved") {
+      updateDoc.$inc = { availableSeats: -1, enrolledStudents: 1 };
       const result = await classesCollection.updateOne(query, updateDoc);
     return res.send(result);
     }
